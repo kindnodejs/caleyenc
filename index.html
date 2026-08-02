@@ -67,6 +67,33 @@
       box-sizing: border-box;
     }
 
+    .password-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .password-container input {
+      padding-right: 45px;
+    }
+
+    .toggle-pass-btn {
+      position: absolute;
+      right: 5px;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      cursor: pointer;
+      padding: 5px 10px;
+      font-size: 1.1rem;
+      width: auto;
+      border-radius: 4px;
+    }
+
+    .toggle-pass-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
     button {
       width: 100%;
       padding: 12px;
@@ -153,7 +180,10 @@
       <h2>1. Security Key</h2>
       <div class="form-group">
         <label for="passphrase">Master Passphrase</label>
-        <input type="password" id="passphrase" placeholder="Enter encryption key..." />
+        <div class="password-container">
+          <input type="password" id="passphrase" placeholder="Enter encryption key..." />
+          <button type="button" id="togglePassBtn" class="toggle-pass-btn">👁️</button>
+        </div>
       </div>
     </div>
 
@@ -187,6 +217,20 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoZGRnaXBoaWRhZXZnaHRieGdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2MTQ2MjMsImV4cCI6MjEwMTE5MDYyM30.3jD9Fmx-jXPd_uHZhXe7bifipJf2-mrw4Z72cKrheq0";
     
     const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // --- PASSWORD VISIBILITY TOGGLE ---
+    const passphraseInput = document.getElementById('passphrase');
+    const togglePassBtn = document.getElementById('togglePassBtn');
+
+    togglePassBtn.addEventListener('click', () => {
+      if (passphraseInput.type === 'password') {
+        passphraseInput.type = 'text';
+        togglePassBtn.textContent = '🙈';
+      } else {
+        passphraseInput.type = 'password';
+        togglePassBtn.textContent = '👁️';
+      }
+    });
 
     // --- WEBCRYPTO FUNCTIONS ---
     async function getCryptoKey(passphrase, salt) {
@@ -249,7 +293,7 @@
 
     // --- UPLOAD HANDLER ---
     document.getElementById('uploadBtn').addEventListener('click', async () => {
-      const passphrase = document.getElementById('passphrase').value;
+      const passphrase = passphraseInput.value;
       const fileInput = document.getElementById('fileInput');
       const startSeqInput = document.getElementById('startSeq');
       const status = document.getElementById('uploadStatus');
@@ -271,10 +315,8 @@
         status.innerText = `Encrypting & uploading ${i + 1}/${sortedFiles.length}: ${file.name}`;
 
         try {
-          // 1. Encrypt file buffer
           const encryptedBuffer = await encryptFile(file, passphrase);
 
-          // 2. Upload blob to Supabase Storage
           const storagePath = `encrypted/${Date.now()}_${file.name}.bin`;
           const { error: storageError } = await _supabase.storage
             .from('vault')
@@ -282,7 +324,6 @@
 
           if (storageError) throw storageError;
 
-          // 3. Save reference and sequence metadata to Database Table
           const { error: dbError } = await _supabase
             .from('images')
             .insert([{
@@ -312,14 +353,12 @@
       if (!confirm("Are you sure you want to delete this file from the vault?")) return;
 
       try {
-        // 1. Delete file from Storage
         const { error: storageErr } = await _supabase.storage
           .from('vault')
           .remove([storagePath]);
 
         if (storageErr) throw storageErr;
 
-        // 2. Delete record from Database Table
         const { error: dbErr } = await _supabase
           .from('images')
           .delete()
@@ -327,7 +366,6 @@
 
         if (dbErr) throw dbErr;
 
-        // 3. Remove item card from UI
         element.remove();
       } catch (err) {
         console.error(err);
@@ -337,7 +375,7 @@
 
     // --- FETCH & DECRYPT HANDLER ---
     document.getElementById('fetchBtn').addEventListener('click', async () => {
-      const passphrase = document.getElementById('passphrase').value;
+      const passphrase = passphraseInput.value;
       const gallery = document.getElementById('gallery');
       const status = document.getElementById('galleryStatus');
 
@@ -384,7 +422,6 @@
             <button class="delete-btn">Delete File</button>
           `;
 
-          // Attach delete click listener
           item.querySelector('.delete-btn').addEventListener('click', () => {
             deleteItem(record.id, record.storage_path, item);
           });
