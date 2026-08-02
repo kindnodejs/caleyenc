@@ -179,9 +179,9 @@
     <div class="card">
       <h2>1. Security Key</h2>
       <div class="form-group">
-        <label for="passphrase">Master Passphrase</label>
+        <label for="passphrase">Master Passphrase (comma-separated for multiple)</label>
         <div class="password-container">
-          <input type="password" id="passphrase" placeholder="Enter encryption key..." />
+          <input type="password" id="passphrase" placeholder="Enter encryption key(s)..." />
           <button type="button" id="togglePassBtn" class="toggle-pass-btn">👁️</button>
         </div>
       </div>
@@ -293,7 +293,7 @@
 
     // --- UPLOAD HANDLER ---
     document.getElementById('uploadBtn').addEventListener('click', async () => {
-      const passphrase = passphraseInput.value;
+      const passphrase = passphraseInput.value.trim();
       const fileInput = document.getElementById('fileInput');
       const startSeqInput = document.getElementById('startSeq');
       const status = document.getElementById('uploadStatus');
@@ -317,7 +317,10 @@
         try {
           const encryptedBuffer = await encryptFile(file, passphrase);
 
-          const storagePath = `encrypted/${Date.now()}_${file.name}.bin`;
+          // Unique path generator preventing file name overwrites
+          const uniqueSuffix = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+          const storagePath = `encrypted/${Date.now()}_${uniqueSuffix}_${file.name}.bin`;
+
           const { error: storageError } = await _supabase.storage
             .from('vault')
             .upload(storagePath, new Blob([encryptedBuffer]));
@@ -375,11 +378,14 @@
 
     // --- FETCH & DECRYPT HANDLER ---
     document.getElementById('fetchBtn').addEventListener('click', async () => {
-      const passphrase = passphraseInput.value;
+      const rawInput = passphraseInput.value;
       const gallery = document.getElementById('gallery');
       const status = document.getElementById('galleryStatus');
 
-      if (!passphrase) return alert("Please enter a passphrase!");
+      if (!rawInput) return alert("Please enter at least one passphrase!");
+
+      // Split input by commas to support multiple keys (e.g. "pass1, pass2")
+      const passphrases = rawInput.split(',').map(p => p.trim()).filter(Boolean);
 
       gallery.innerHTML = "";
       status.style.color = "#38bdf8";
@@ -397,17 +403,42 @@
           return;
         }
 
-        status.innerText = `Decrypting ${records.length} files...`;
+        status.innerText = `Processing ${records.length} files...`;
 
         for (const record of records) {
           const { data: blob, error: downloadError } = await _supabase.storage
             .from('vault')
             .download(record.storage_path);
 
-          if (downloadError) throw downloadError;
+          if (downloadError) {
+            console.error(`Download error for ${record.title}:`, downloadError);
+            continue;
+          }
 
           const arrayBuffer = await blob.arrayBuffer();
-          const decryptedBuffer = await decryptFile(new Uint8Array(arrayBuffer), passphrase);
+          const uint8ArrayData = new Uint8Array(arrayBuffer);
+
+          if (uint8ArrayData.length < 29) {
+            console.warn(`File ${record.title} is too small to be valid.`);
+            continue;
+          }
+
+          let decryptedBuffer = null;
+
+          // Try each passphrase until one successfully unlocks the file
+          for (const pass of passphrases) {
+            try {
+              decryptedBuffer = await decryptFile(uint8ArrayData, pass);
+              break; 
+            } catch (e) {
+              // Passphrase didn't match this file, check next one
+            }
+          }
+
+          if (!decryptedBuffer) {
+            console.warn(`Could not decrypt ${record.title} with any provided passphrase.`);
+            continue;
+          }
 
           const decryptedBlob = new Blob([decryptedBuffer]);
           const objectUrl = URL.createObjectURL(decryptedBlob);
@@ -431,9 +462,9 @@
 
         status.innerText = "";
       } catch (err) {
-        console.error(err);
+        console.error("Gallery fetch error:", err);
         status.style.color = "#ef4444";
-        status.innerText = `Decryption failed: Incorrect passphrase or damaged data.`;
+        status.innerText = `Error loading vault files. Check console for details.`;
       }
     });
   </script>
