@@ -234,7 +234,7 @@ function showPrevImage() {
 function updateLightboxContent() {
   const item = galleryItemsData[currentIndex];
   lightboxImg.src = item.dataUrl;
-  lightboxCaption.textContent = item.caption ? `#${item.sequence} - ${item.caption}` : `#${item.sequence}`;
+  lightboxCaption.textContent = item.caption ? `#${item.sequence}\n${item.caption}` : `#${item.sequence}`;
 }
 
 lightboxClose.addEventListener('click', closeLightbox);

@@ -212,8 +212,10 @@ button:hover {
 .lightbox-content p {
   color: var(--accent);
   margin-top: 15px;
-  font-size: 1.1rem;
+  font-size: 0.8rem;
   font-weight: bold;
+  white-space: pre-wrap; /* Preserves line breaks and wraps text */
+  text-align: center;
 }
 
 .lightbox-btn {
