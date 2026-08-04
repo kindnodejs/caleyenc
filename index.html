@@ -4,194 +4,29 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Encrypted Vault</title>
-  <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    :root {
-      --bg-color: #0f172a;
-      --card-bg: #1e293b;
-      --text: #f8fafc;
-      --accent: #38bdf8;
-      --accent-hover: #0284c7;
-      --danger: #ef4444;
-      --danger-hover: #dc2626;
-      --border: #334155;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text);
-      margin: 0;
-      padding: 20px;
-    }
-
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-    }
-
-    h1, h2 {
-      text-align: center;
-      color: var(--accent);
-    }
-
-    .card {
-      background: var(--card-bg);
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 20px;
-      border: 1px solid var(--border);
-    }
-
-    .form-group {
-      margin-bottom: 15px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-    }
-
-    input[type="text"],
-    input[type="password"],
-    input[type="number"],
-    input[type="file"] {
-      width: 100%;
-      padding: 10px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background: #0f172a;
-      color: #fff;
-      box-sizing: border-box;
-    }
-
-    .password-container {
-      position: relative;
-      display: flex;
-      align-items: center;
-    }
-
-    .password-container input {
-      padding-right: 45px;
-    }
-
-    .toggle-pass-btn {
-      position: absolute;
-      right: 5px;
-      background: transparent;
-      border: none;
-      color: var(--text);
-      cursor: pointer;
-      padding: 5px 10px;
-      font-size: 1.1rem;
-      width: auto;
-      border-radius: 4px;
-    }
-
-    .toggle-pass-btn:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    button {
-      width: 100%;
-      padding: 12px;
-      background: var(--accent);
-      color: #000;
-      font-weight: bold;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    button:hover {
-      background: var(--accent-hover);
-    }
-
-    .delete-btn {
-      background: var(--danger);
-      color: #fff;
-      padding: 8px 16px;
-      margin-top: 10px;
-      width: auto;
-    }
-
-    .delete-btn:hover {
-      background: var(--danger-hover);
-    }
-
-    .grid {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      margin-top: 20px;
-    }
-
-    .grid-item {
-      background: var(--card-bg);
-      border-radius: 8px;
-      padding: 15px;
-      border: 1px solid var(--border);
-      text-align: center;
-    }
-
-    .grid-item a {
-      display: block;
-      overflow: hidden;
-      border-radius: 6px;
-    }
-
-    .grid-item img {
-      width: 100%;
-      height: auto;
-      max-height: 80vh;
-      object-fit: contain;
-      border-radius: 6px;
-      transition: transform 0.2s ease;
-      cursor: zoom-in;
-    }
-
-    .grid-item img:hover {
-      transform: scale(1.01);
-    }
-
-    .grid-item p {
-      margin: 10px 0 0 0;
-      color: var(--accent);
-      font-size: 0.95rem;
-    }
-
-    .status {
-      margin-top: 10px;
-      text-align: center;
-      font-weight: bold;
-    }
-  </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
   <div class="container">
     <h1>🔒 Encrypted Vault</h1>
 
-    <!-- Passphrase Section -->
     <div class="card">
       <h2>1. Security Key</h2>
       <div class="form-group">
-        <label for="passphrase">Master Passphrase (comma-separated for multiple)</label>
+        <label for="passphrase">Master Passphrase</label>
         <div class="password-container">
-          <input type="password" id="passphrase" placeholder="Enter encryption key(s)..." />
+          <input type="password" id="passphrase" placeholder="Enter encryption key..." />
           <button type="button" id="togglePassBtn" class="toggle-pass-btn">👁️</button>
         </div>
       </div>
     </div>
 
-    <!-- Upload Section -->
     <div class="card">
       <h2>2. Batch Upload Files</h2>
       <div class="form-group">
-        <label for="fileInput">Select Files (e.g. a01, a02, b01, b02...)</label>
+        <label for="fileInput">Select Files</label>
         <input type="file" id="fileInput" multiple accept="image/*" />
       </div>
       <div class="form-group">
@@ -202,271 +37,25 @@
       <div id="uploadStatus" class="status"></div>
     </div>
 
-    <!-- Gallery Section -->
     <div class="card">
       <h2>3. Decrypted Gallery</h2>
       <button id="fetchBtn">Fetch & Decrypt Files</button>
+      
       <div id="galleryStatus" class="status"></div>
-      <div id="gallery" class="grid"></div>
+      <div id="gallery" class="grid thumbnail-grid"></div>
     </div>
   </div>
 
-  <script>
-    // --- SUPABASE CONFIGURATION ---
-    const SUPABASE_URL = "https://chddgiphidaevghtbxgo.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNoZGRnaXBoaWRhZXZnaHRieGdvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2MTQ2MjMsImV4cCI6MjEwMTE5MDYyM30.3jD9Fmx-jXPd_uHZhXe7bifipJf2-mrw4Z72cKrheq0";
-    
-    const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  <div id="lightbox" class="lightbox" tabindex="0">
+    <button id="lightboxClose" class="lightbox-close-btn">close</button>
+    <button id="lightboxPrev" class="lightbox-btn">&#10094;</button>
+    <div class="lightbox-content">
+      <img id="lightboxImg" src="" alt="Fullscreen View" />
+      <p id="lightboxCaption"></p>
+    </div>
+    <button id="lightboxNext" class="lightbox-btn">&#10095;</button>
+  </div>
 
-    // --- PASSWORD VISIBILITY TOGGLE ---
-    const passphraseInput = document.getElementById('passphrase');
-    const togglePassBtn = document.getElementById('togglePassBtn');
-
-    togglePassBtn.addEventListener('click', () => {
-      if (passphraseInput.type === 'password') {
-        passphraseInput.type = 'text';
-        togglePassBtn.textContent = '🙈';
-      } else {
-        passphraseInput.type = 'password';
-        togglePassBtn.textContent = '👁️';
-      }
-    });
-
-    // --- WEBCRYPTO FUNCTIONS ---
-    async function getCryptoKey(passphrase, salt) {
-      const enc = new TextEncoder();
-      const keyMaterial = await crypto.subtle.importKey(
-        "raw",
-        enc.encode(passphrase),
-        "PBKDF2",
-        false,
-        ["deriveKey"]
-      );
-      return crypto.subtle.deriveKey(
-        {
-          name: "PBKDF2",
-          salt: salt,
-          iterations: 100000,
-          hash: "SHA-256"
-        },
-        keyMaterial,
-        { name: "AES-GCM", length: 256 },
-        false,
-        ["encrypt", "decrypt"]
-      );
-    }
-
-    async function encryptFile(file, passphrase) {
-      const arrayBuffer = await file.arrayBuffer();
-      const salt = crypto.getRandomValues(new Uint8Array(16));
-      const iv = crypto.getRandomValues(new Uint8Array(12));
-      const key = await getCryptoKey(passphrase, salt);
-
-      const encryptedContent = await crypto.subtle.encrypt(
-        { name: "AES-GCM", iv: iv },
-        key,
-        arrayBuffer
-      );
-
-      const combined = new Uint8Array(salt.length + iv.length + encryptedContent.byteLength);
-      combined.set(salt, 0);
-      combined.set(iv, salt.length);
-      combined.set(new Uint8Array(encryptedContent), salt.length + iv.length);
-
-      return combined;
-    }
-
-    async function decryptFile(encryptedData, passphrase) {
-      const salt = encryptedData.slice(0, 16);
-      const iv = encryptedData.slice(16, 28);
-      const content = encryptedData.slice(28);
-
-      const key = await getCryptoKey(passphrase, salt);
-      const decryptedContent = await crypto.subtle.decrypt(
-        { name: "AES-GCM", iv: iv },
-        key,
-        content
-      );
-
-      return decryptedContent;
-    }
-
-    // --- UPLOAD HANDLER ---
-    document.getElementById('uploadBtn').addEventListener('click', async () => {
-      const passphrase = passphraseInput.value.trim();
-      const fileInput = document.getElementById('fileInput');
-      const startSeqInput = document.getElementById('startSeq');
-      const status = document.getElementById('uploadStatus');
-
-      if (!passphrase) return alert("Please enter a passphrase!");
-      if (!fileInput.files.length) return alert("Please select files to upload!");
-
-      let currentSeq = parseInt(startSeqInput.value, 10) || 1;
-
-      // Natural client-side sorting before upload
-      const sortedFiles = Array.from(fileInput.files).sort((a, b) => 
-        a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
-      );
-
-      status.style.color = "#38bdf8";
-      
-      for (let i = 0; i < sortedFiles.length; i++) {
-        const file = sortedFiles[i];
-        status.innerText = `Encrypting & uploading ${i + 1}/${sortedFiles.length}: ${file.name}`;
-
-        try {
-          const encryptedBuffer = await encryptFile(file, passphrase);
-
-          // Unique path generator preventing file name overwrites
-          const uniqueSuffix = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
-          const storagePath = `encrypted/${Date.now()}_${uniqueSuffix}_${file.name}.bin`;
-
-          const { error: storageError } = await _supabase.storage
-            .from('vault')
-            .upload(storagePath, new Blob([encryptedBuffer]));
-
-          if (storageError) throw storageError;
-
-          const { error: dbError } = await _supabase
-            .from('images')
-            .insert([{
-              title: file.name,
-              storage_path: storagePath,
-              sequence_order: currentSeq
-            }]);
-
-          if (dbError) throw dbError;
-
-          currentSeq++;
-        } catch (err) {
-          console.error(err);
-          status.style.color = "#ef4444";
-          status.innerText = `Error uploading ${file.name}: ${err.message}`;
-          return;
-        }
-      }
-
-      status.style.color = "#22c55e";
-      status.innerText = "All files successfully encrypted and uploaded in order!";
-      fileInput.value = "";
-    });
-
-    // --- DELETE HANDLER ---
-    async function deleteItem(id, storagePath, element) {
-      if (!confirm("Are you sure you want to delete this file from the vault?")) return;
-
-      try {
-        const { error: storageErr } = await _supabase.storage
-          .from('vault')
-          .remove([storagePath]);
-
-        if (storageErr) throw storageErr;
-
-        const { error: dbErr } = await _supabase
-          .from('images')
-          .delete()
-          .eq('id', id);
-
-        if (dbErr) throw dbErr;
-
-        element.remove();
-      } catch (err) {
-        console.error(err);
-        alert(`Failed to delete: ${err.message}`);
-      }
-    }
-
-    // --- FETCH & DECRYPT HANDLER ---
-    document.getElementById('fetchBtn').addEventListener('click', async () => {
-      const rawInput = passphraseInput.value;
-      const gallery = document.getElementById('gallery');
-      const status = document.getElementById('galleryStatus');
-
-      if (!rawInput) return alert("Please enter at least one passphrase!");
-
-      // Split input by commas to support multiple keys (e.g. "pass1, pass2")
-      const passphrases = rawInput.split(',').map(p => p.trim()).filter(Boolean);
-
-      gallery.innerHTML = "";
-      status.style.color = "#38bdf8";
-      status.innerText = "Fetching entries...";
-
-      try {
-        const { data: records, error: dbError } = await _supabase
-          .from('images')
-          .select('*')
-          .order('title', { ascending: true });
-
-        if (dbError) throw dbError;
-        if (!records || !records.length) {
-          status.innerText = "No files found in vault.";
-          return;
-        }
-
-        status.innerText = `Processing ${records.length} files...`;
-
-        for (const record of records) {
-          const { data: blob, error: downloadError } = await _supabase.storage
-            .from('vault')
-            .download(record.storage_path);
-
-          if (downloadError) {
-            console.error(`Download error for ${record.title}:`, downloadError);
-            continue;
-          }
-
-          const arrayBuffer = await blob.arrayBuffer();
-          const uint8ArrayData = new Uint8Array(arrayBuffer);
-
-          if (uint8ArrayData.length < 29) {
-            console.warn(`File ${record.title} is too small to be valid.`);
-            continue;
-          }
-
-          let decryptedBuffer = null;
-
-          // Try each passphrase until one successfully unlocks the file
-          for (const pass of passphrases) {
-            try {
-              decryptedBuffer = await decryptFile(uint8ArrayData, pass);
-              break; 
-            } catch (e) {
-              // Passphrase didn't match this file, check next one
-            }
-          }
-
-          if (!decryptedBuffer) {
-            console.warn(`Could not decrypt ${record.title} with any provided passphrase.`);
-            continue;
-          }
-
-          const decryptedBlob = new Blob([decryptedBuffer]);
-          const objectUrl = URL.createObjectURL(decryptedBlob);
-
-          const item = document.createElement('div');
-          item.className = 'grid-item';
-          item.innerHTML = `
-            <a href="${objectUrl}" target="_blank" title="Click to view full screen">
-              <img src="${objectUrl}" alt="${record.title}" />
-            </a>
-            <p><strong>#${record.sequence_order}</strong> - ${record.title}</p>
-            <button class="delete-btn">Delete File</button>
-          `;
-
-          item.querySelector('.delete-btn').addEventListener('click', () => {
-            deleteItem(record.id, record.storage_path, item);
-          });
-
-          gallery.appendChild(item);
-        }
-
-        status.innerText = "";
-      } catch (err) {
-        console.error("Gallery fetch error:", err);
-        status.style.color = "#ef4444";
-        status.innerText = `Error loading vault files. Check console for details.`;
-      }
-    });
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
