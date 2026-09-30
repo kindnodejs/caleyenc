@@ -31,7 +31,7 @@ let lightboxTitleImg = document.getElementById('lightboxTitleImg');
 if (!lightboxTitleImg && lightbox) {
   lightboxTitleImg = document.createElement('img');
   lightboxTitleImg.id = 'lightboxTitleImg';
-  lightboxTitleImg.style.cssText = 'position: absolute; top: 20px; right: 20px; width: 200px; height: 200px; object-fit: cover; border: 2px solid #ffffff; border-radius: 8px; display: none; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5);';
+  lightboxTitleImg.style.cssText = 'position: absolute; top: 20px; right: 20px; width: 300px; height: 300px; object-fit: cover; border: 2px solid #ffffff; border-radius: 8px; display: none; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5);';
   lightbox.appendChild(lightboxTitleImg);
 }
 
