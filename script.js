@@ -17,7 +17,7 @@ const lightboxClose = document.getElementById('lightboxClose');
 const lightboxPrev = document.getElementById('lightboxPrev');
 const lightboxNext = document.getElementById('lightboxNext');
 
-// Reposition Close Button to Top-Left so it doesn't clash with the Title Picture
+// Reposition Close Button to Top-Left
 if (lightboxClose) {
   lightboxClose.style.position = 'absolute';
   lightboxClose.style.top = '20px';
@@ -26,18 +26,120 @@ if (lightboxClose) {
   lightboxClose.style.zIndex = '1001';
 }
 
-// Create Lightbox Title Image Element Dynamically (200px x 200px Top-Right)
+// Create Lightbox Title Container, Image, and External Zoom Controls
+let lightboxTitleContainer = document.getElementById('lightboxTitleContainer');
 let lightboxTitleImg = document.getElementById('lightboxTitleImg');
-if (!lightboxTitleImg && lightbox) {
+let titleControls = document.getElementById('titleControls');
+
+if (!lightboxTitleContainer && lightbox) {
+  lightboxTitleContainer = document.createElement('div');
+  lightboxTitleContainer.id = 'lightboxTitleContainer';
+  lightboxTitleContainer.style.cssText = 'position: absolute; top: 20px; right: 20px; width: 300px; height: 300px; border: 2px solid #ffffff; border-radius: 8px; overflow: hidden; display: none; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5); background: #000; touch-action: none;';
+  
   lightboxTitleImg = document.createElement('img');
   lightboxTitleImg.id = 'lightboxTitleImg';
-  lightboxTitleImg.style.cssText = 'position: absolute; top: 20px; right: 20px; width: 300px; height: 300px; object-fit: cover; border: 2px solid #ffffff; border-radius: 8px; display: none; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5);';
-  lightbox.appendChild(lightboxTitleImg);
+  lightboxTitleImg.style.cssText = 'width: 100%; height: 100%; object-fit: contain; transform-origin: center; transition: transform 0.05s ease-out; user-select: none; pointer-events: none;';
+  
+  // External Zoom Controls Toolbar (Placed to the left of the title box)
+  titleControls = document.createElement('div');
+  titleControls.id = 'titleControls';
+  titleControls.style.cssText = 'position: absolute; top: 20px; right: 330px; display: none; gap: 4px; background: rgba(0,0,0,0.8); padding: 6px; border-radius: 6px; z-index: 1002; box-shadow: 0 4px 12px rgba(0,0,0,0.5);';
+  
+  const zoomOutBtn = createZoomButton('−', () => adjustZoom(-0.4));
+  const resetZoomBtn = createZoomButton('⟲', () => resetTitleTransform());
+  const zoomInBtn = createZoomButton('+', () => adjustZoom(0.4));
+
+  titleControls.appendChild(zoomOutBtn);
+  titleControls.appendChild(resetZoomBtn);
+  titleControls.appendChild(zoomInBtn);
+
+  lightboxTitleContainer.appendChild(lightboxTitleImg);
+  lightbox.appendChild(lightboxTitleContainer);
+  lightbox.appendChild(titleControls);
+}
+
+function createZoomButton(text, onClick) {
+  const btn = document.createElement('button');
+  btn.textContent = text;
+  btn.style.cssText = 'background: #334155; color: #fff; border: none; width: 32px; height: 32px; border-radius: 4px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 15px;';
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    onClick();
+  });
+  return btn;
 }
 
 let galleryItemsData = [];
 let currentIndex = 0;
 let currentTitleItem = null;
+
+// Title Image Zoom & Pan State Variables
+let titleZoom = 1;
+let titlePanX = 0;
+let titlePanY = 0;
+let isDraggingTitle = false;
+let startDragX = 0;
+let startDragY = 0;
+
+function updateTitleTransform() {
+  if (lightboxTitleImg) {
+    lightboxTitleImg.style.transform = `translate(${titlePanX}px, ${titlePanY}px) scale(${titleZoom})`;
+  }
+}
+
+function resetTitleTransform() {
+  titleZoom = 1;
+  titlePanX = 0;
+  titlePanY = 0;
+  updateTitleTransform();
+  if (lightboxTitleContainer) lightboxTitleContainer.style.cursor = 'default';
+}
+
+function adjustZoom(amount) {
+  titleZoom = Math.min(Math.max(titleZoom + amount, 1), 5); // Range: 1x to 5x
+  if (titleZoom === 1) {
+    titlePanX = 0;
+    titlePanY = 0;
+  }
+  if (lightboxTitleContainer) {
+    lightboxTitleContainer.style.cursor = titleZoom > 1 ? 'grab' : 'default';
+  }
+  updateTitleTransform();
+}
+
+// Zoom via Mouse Wheel
+if (lightboxTitleContainer) {
+  lightboxTitleContainer.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    adjustZoom(e.deltaY < 0 ? 0.4 : -0.4);
+  }, { passive: false });
+
+  // Pan via Pointer Events (Supports Mouse & Touch Drag)
+  lightboxTitleContainer.addEventListener('pointerdown', (e) => {
+    if (titleZoom > 1) {
+      isDraggingTitle = true;
+      lightboxTitleContainer.style.cursor = 'grabbing';
+      startDragX = e.clientX - titlePanX;
+      startDragY = e.clientY - titlePanY;
+      lightboxTitleContainer.setPointerCapture(e.pointerId);
+    }
+  });
+
+  lightboxTitleContainer.addEventListener('pointermove', (e) => {
+    if (!isDraggingTitle) return;
+    titlePanX = e.clientX - startDragX;
+    titlePanY = e.clientY - startDragY;
+    updateTitleTransform();
+  });
+
+  lightboxTitleContainer.addEventListener('pointerup', (e) => {
+    if (isDraggingTitle) {
+      isDraggingTitle = false;
+      lightboxTitleContainer.style.cursor = titleZoom > 1 ? 'grab' : 'default';
+      try { lightboxTitleContainer.releasePointerCapture(e.pointerId); } catch(err) {}
+    }
+  });
+}
 
 // --- PASSWORD VISIBILITY TOGGLE ---
 togglePassBtn.addEventListener('click', () => {
@@ -206,6 +308,7 @@ function setAsTitle(targetItemData, recordId) {
   galleryItemsData.forEach(item => item.isTitle = false);
   targetItemData.isTitle = true;
   currentTitleItem = targetItemData;
+  resetTitleTransform();
 
   // Update button visual states across all grid items
   document.querySelectorAll('.grid-item').forEach(el => {
@@ -242,7 +345,9 @@ async function deleteItem(id, storagePath, element) {
 
     if (currentTitleItem && currentTitleItem.id === id) {
       currentTitleItem = null;
-      lightboxTitleImg.style.display = 'none';
+      lightboxTitleContainer.style.display = 'none';
+      if (titleControls) titleControls.style.display = 'none';
+      resetTitleTransform();
     }
 
     element.remove();
@@ -262,6 +367,7 @@ function openLightbox(index) {
 
 function closeLightbox() {
   lightbox.classList.remove('active');
+  resetTitleTransform();
 }
 
 function showNextImage() {
@@ -281,12 +387,14 @@ function updateLightboxContent() {
   lightboxImg.src = item.dataUrl;
   lightboxCaption.textContent = item.caption ? `#${item.sequence}\n${item.caption}` : `#${item.sequence}`;
 
-  // Fixed top-right title picture display (never changes on next/prev)
+  // Fixed top-right title picture display & external controls visibility
   if (currentTitleItem && currentTitleItem.dataUrl) {
     lightboxTitleImg.src = currentTitleItem.dataUrl;
-    lightboxTitleImg.style.display = 'block';
+    lightboxTitleContainer.style.display = 'block';
+    if (titleControls) titleControls.style.display = 'flex';
   } else {
-    lightboxTitleImg.style.display = 'none';
+    lightboxTitleContainer.style.display = 'none';
+    if (titleControls) titleControls.style.display = 'none';
   }
 }
 
@@ -317,6 +425,8 @@ document.getElementById('fetchBtn').addEventListener('click', async () => {
   gallery.innerHTML = "";
   galleryItemsData = [];
   currentTitleItem = null;
+  if (titleControls) titleControls.style.display = 'none';
+  resetTitleTransform();
   status.style.color = "#38bdf8";
   status.innerText = "Fetching entries...";
 
