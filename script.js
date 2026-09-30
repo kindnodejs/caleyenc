@@ -17,8 +17,27 @@ const lightboxClose = document.getElementById('lightboxClose');
 const lightboxPrev = document.getElementById('lightboxPrev');
 const lightboxNext = document.getElementById('lightboxNext');
 
+// Reposition Close Button to Top-Left so it doesn't clash with the Title Picture
+if (lightboxClose) {
+  lightboxClose.style.position = 'absolute';
+  lightboxClose.style.top = '20px';
+  lightboxClose.style.left = '20px';
+  lightboxClose.style.right = 'auto';
+  lightboxClose.style.zIndex = '1001';
+}
+
+// Create Lightbox Title Image Element Dynamically (200px x 200px Top-Right)
+let lightboxTitleImg = document.getElementById('lightboxTitleImg');
+if (!lightboxTitleImg && lightbox) {
+  lightboxTitleImg = document.createElement('img');
+  lightboxTitleImg.id = 'lightboxTitleImg';
+  lightboxTitleImg.style.cssText = 'position: absolute; top: 20px; right: 20px; width: 200px; height: 200px; object-fit: cover; border: 2px solid #ffffff; border-radius: 8px; display: none; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5);';
+  lightbox.appendChild(lightboxTitleImg);
+}
+
 let galleryItemsData = [];
 let currentIndex = 0;
+let currentTitleItem = null;
 
 // --- PASSWORD VISIBILITY TOGGLE ---
 togglePassBtn.addEventListener('click', () => {
@@ -182,6 +201,27 @@ async function saveCaption(id, newCaption) {
   }
 }
 
+// --- SET TITLE HANDLER (Session-Only) ---
+function setAsTitle(targetItemData, recordId) {
+  galleryItemsData.forEach(item => item.isTitle = false);
+  targetItemData.isTitle = true;
+  currentTitleItem = targetItemData;
+
+  // Update button visual states across all grid items
+  document.querySelectorAll('.grid-item').forEach(el => {
+    const titleBtn = el.querySelector('.title-btn');
+    if (titleBtn) {
+      if (el.getAttribute('data-id') === String(recordId)) {
+        titleBtn.textContent = '★ Title Picture';
+        titleBtn.style.backgroundColor = '#22c55e';
+      } else {
+        titleBtn.textContent = 'Set as Title';
+        titleBtn.style.backgroundColor = '';
+      }
+    }
+  });
+}
+
 // --- DELETE HANDLER ---
 async function deleteItem(id, storagePath, element) {
   if (!confirm("Are you sure you want to delete this file from the vault?")) return;
@@ -199,6 +239,11 @@ async function deleteItem(id, storagePath, element) {
       .eq('id', id);
 
     if (dbErr) throw dbErr;
+
+    if (currentTitleItem && currentTitleItem.id === id) {
+      currentTitleItem = null;
+      lightboxTitleImg.style.display = 'none';
+    }
 
     element.remove();
   } catch (err) {
@@ -235,14 +280,24 @@ function updateLightboxContent() {
   const item = galleryItemsData[currentIndex];
   lightboxImg.src = item.dataUrl;
   lightboxCaption.textContent = item.caption ? `#${item.sequence}\n${item.caption}` : `#${item.sequence}`;
+
+  // Fixed top-right title picture display (never changes on next/prev)
+  if (currentTitleItem && currentTitleItem.dataUrl) {
+    lightboxTitleImg.src = currentTitleItem.dataUrl;
+    lightboxTitleImg.style.display = 'block';
+  } else {
+    lightboxTitleImg.style.display = 'none';
+  }
 }
 
 lightboxClose.addEventListener('click', closeLightbox);
-lightboxNext.addEventListener('click', showNextImage);
-lightboxPrev.addEventListener('click', showPrevImage);
-
-lightbox.addEventListener('click', (e) => {
-  if (e.target === lightbox) closeLightbox();
+lightboxNext.addEventListener('click', (e) => {
+  e.stopPropagation();
+  showNextImage();
+});
+lightboxPrev.addEventListener('click', (e) => {
+  e.stopPropagation();
+  showPrevImage();
 });
 
 document.addEventListener('keydown', (e) => {
@@ -252,7 +307,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowLeft') showPrevImage();
 });
 
-// --- FETCH & DECRYPT HANDLER (With Approach 1 Hint Filtering & Auto-Migration) ---
+// --- FETCH & DECRYPT HANDLER ---
 document.getElementById('fetchBtn').addEventListener('click', async () => {
   const passphrase = passphraseInput.value.trim();
   const status = document.getElementById('galleryStatus');
@@ -261,13 +316,13 @@ document.getElementById('fetchBtn').addEventListener('click', async () => {
 
   gallery.innerHTML = "";
   galleryItemsData = [];
+  currentTitleItem = null;
   status.style.color = "#38bdf8";
   status.innerText = "Fetching entries...";
 
   try {
     const passHint = await generatePassHint(passphrase);
 
-    // Fetch hinted records matching passHint OR legacy records where pass_hint is null/empty
     const { data: records, error: dbError } = await _supabase
       .from('images')
       .select('*')
@@ -304,12 +359,8 @@ document.getElementById('fetchBtn').addEventListener('click', async () => {
         // Passphrase didn't match this record
       }
 
-      if (!decryptedBuffer) {
-        // Skip records that failed decryption (e.g. old records belonging to a different key)
-        continue;
-      }
+      if (!decryptedBuffer) continue;
 
-      // Auto-Migration: If this legacy record didn't have a pass_hint, stamp it now!
       if (!record.pass_hint) {
         _supabase.from('images').update({ pass_hint: passHint }).eq('id', record.id).then();
       }
@@ -317,23 +368,26 @@ document.getElementById('fetchBtn').addEventListener('click', async () => {
       const decryptedBlob = new Blob([decryptedBuffer], { type: 'image/png' });
       const dataUrl = await blobToDataURL(decryptedBlob);
 
-      const itemIndex = galleryItemsData.length;
-      
       const itemDataRef = {
+        id: record.id,
         dataUrl: dataUrl,
         sequence: record.sequence_order,
-        caption: record.caption || ""
+        caption: record.caption || "",
+        isTitle: false
       };
+
       galleryItemsData.push(itemDataRef);
 
       const item = document.createElement('div');
       item.className = 'grid-item';
+      item.setAttribute('data-id', record.id);
       item.innerHTML = `
         <div class="image-container" title="Click for fullscreen view">
           <img src="${dataUrl}" alt="Thumbnail #${record.sequence_order}" />
         </div>
         <p><strong>#${record.sequence_order}</strong></p>
         <textarea class="caption-input" placeholder="Add caption...">${record.caption || ''}</textarea>
+        <button class="title-btn">Set as Title</button>
         <button class="delete-btn">Delete File</button>
       `;
 
@@ -344,8 +398,16 @@ document.getElementById('fetchBtn').addEventListener('click', async () => {
         saveCaption(record.id, e.target.value);
       });
 
+      // Title Button Handler
+      const titleBtn = item.querySelector('.title-btn');
+      titleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        setAsTitle(itemDataRef, record.id);
+      });
+
       item.querySelector('.image-container').addEventListener('click', () => {
-        openLightbox(itemIndex);
+        const index = galleryItemsData.findIndex(i => i.id === record.id);
+        if (index !== -1) openLightbox(index);
       });
 
       item.querySelector('.delete-btn').addEventListener('click', (e) => {
