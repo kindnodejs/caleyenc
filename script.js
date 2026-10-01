@@ -41,8 +41,8 @@ lightboxStyleTag.innerHTML = `
     z-index: 1000;
   }
   #lightboxTitleContainer {
-    width: 300px;
-    height: 300px;
+    width: 360px;
+    height: 360px;
     border: 2px solid #ffffff;
     border-radius: 8px;
     overflow: hidden;
@@ -79,8 +79,8 @@ lightboxStyleTag.innerHTML = `
   }
   @media (max-width: 768px), (orientation: portrait) {
     #lightboxTitleContainer {
-      width: 200px !important;
-      height: 200px !important;
+      width: 250px !important;
+      height: 250px !important;
     }
   }
 `;
