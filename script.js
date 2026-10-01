@@ -2,12 +2,23 @@
 const lightboxStyleTag = document.createElement('style');
 lightboxStyleTag.innerHTML = `
   #lightbox {
-    display: block;
-    position: relative;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background: rgba(0, 0, 0, 0.95) !important;
+    z-index: 9999 !important;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
     box-sizing: border-box;
-    padding: 40px 20px;
+    padding: 60px 20px 40px 20px;
     overflow-y: auto;
-    text-align: center;
+  }
+  #lightbox.active {
+    display: flex !important;
   }
   #lightboxTitleGroup {
     position: absolute;
@@ -39,8 +50,8 @@ lightboxStyleTag.innerHTML = `
     z-index: 1002;
   }
   #lightboxImg {
-    display: inline-block;
-    margin-top: 20px; /* Small images stay higher up */
+    display: block;
+    margin-top: 10px;
     max-width: 90vw;
     max-height: 75vh;
     width: auto;
@@ -56,6 +67,7 @@ lightboxStyleTag.innerHTML = `
     margin-top: 15px;
     text-align: center;
     z-index: 1000;
+    color: #fff;
   }
   @media (max-width: 768px), (orientation: portrait) {
     #lightboxTitleGroup {
