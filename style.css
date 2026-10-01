@@ -232,8 +232,8 @@ button:hover {
   width: auto;
 }
 
-#lightboxPrev { left: 30px; }
-#lightboxNext { right: 30px; }
+#lightboxPrev { left: 30px; z-index: 10002 !important;}
+#lightboxNext { right: 30px; z-index: 10002 !important;}
 
 .lightbox-close-btn {
   position: absolute;
