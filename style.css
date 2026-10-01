@@ -244,7 +244,7 @@ button:hover {
   color: var(--text);
   font-size: 0.9rem;
   font-weight: bold;
-  padding: 6px 14px;
+  padding: 0px 14px;
   border-radius: 4px;
   cursor: pointer;
   width: auto;
