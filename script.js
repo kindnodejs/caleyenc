@@ -12,7 +12,7 @@ lightboxStyleTag.innerHTML = `
     display: none;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
+    justify-content: center;
     box-sizing: border-box;
     padding: 60px 20px 40px 20px;
     overflow-y: auto;
@@ -51,16 +51,17 @@ lightboxStyleTag.innerHTML = `
   }
   #lightboxImg {
     display: block;
-    margin-top: 10px;
     max-width: 90vw;
     max-height: 75vh;
     width: auto;
     height: auto;
     object-fit: contain;
-    transition: margin-top 0.2s ease;
+    transition: max-width 0.2s ease, margin 0.2s ease;
   }
-  #lightboxImg.is-large {
-    margin-top: 280px !important; /* Pushes large images down into the bottom space, avoiding overlap */
+  /* When title box is active, prevent large main images from extending into the top-right title zone */
+  #lightbox.has-title #lightboxImg.is-large {
+    max-width: calc(100vw - 360px) !important;
+    max-height: 70vh !important;
   }
   #lightboxCaption {
     display: block;
@@ -81,8 +82,9 @@ lightboxStyleTag.innerHTML = `
       width: 245px !important;
       height: 245px !important;
     }
-    #lightboxImg.is-large {
-      margin-top: 275px !important;
+    #lightbox.has-title #lightboxImg.is-large {
+      max-width: 85vw !important;
+      max-height: 60vh !important;
     }
   }
 `;
@@ -441,6 +443,7 @@ async function deleteItem(id, storagePath, element) {
     if (currentTitleItem && currentTitleItem.id === id) {
       currentTitleItem = null;
       if (lightboxTitleGroup) lightboxTitleGroup.style.display = 'none';
+      lightbox.classList.remove('has-title');
       resetTitleTransform();
     }
 
@@ -481,16 +484,15 @@ function updateLightboxContent() {
   lightboxImg.src = item.dataUrl;
   lightboxCaption.textContent = item.caption ? `#${item.sequence}\n${item.caption}` : `#${item.sequence}`;
 
-  // Check if image is large/tall and toggle class to avoid overlapping top-right title box
+  // Check if image is large/tall
   lightboxImg.onload = () => {
-    const availableHeight = window.innerHeight - 340;
+    const availableHeight = window.innerHeight - 200;
     if (lightboxImg.naturalHeight > availableHeight || lightboxImg.height > availableHeight) {
       lightboxImg.classList.add('is-large');
     } else {
       lightboxImg.classList.remove('is-large');
     }
   };
-  // Fallback trigger if already cached
   if (lightboxImg.complete) {
     lightboxImg.onload();
   }
@@ -499,8 +501,10 @@ function updateLightboxContent() {
   if (currentTitleItem && currentTitleItem.dataUrl) {
     lightboxTitleImg.src = currentTitleItem.dataUrl;
     lightboxTitleGroup.style.display = 'flex';
+    lightbox.classList.add('has-title');
   } else {
     lightboxTitleGroup.style.display = 'none';
+    lightbox.classList.remove('has-title');
   }
 }
 
@@ -532,6 +536,7 @@ document.getElementById('fetchBtn').addEventListener('click', async () => {
   galleryItemsData = [];
   currentTitleItem = null;
   if (lightboxTitleGroup) lightboxTitleGroup.style.display = 'none';
+  lightbox.classList.remove('has-title');
   resetTitleTransform();
   status.style.color = "#38bdf8";
   status.innerText = "Fetching entries...";
