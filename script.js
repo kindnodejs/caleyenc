@@ -12,7 +12,6 @@ lightboxStyleTag.innerHTML = `
     display: none;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
     box-sizing: border-box;
     padding: 60px 20px 40px 20px;
     overflow-y: auto;
@@ -20,18 +19,30 @@ lightboxStyleTag.innerHTML = `
   #lightbox.active {
     display: flex !important;
   }
+  /* Wrapper using relative positioning so elements stack naturally without overlapping */
+  #lightboxInner {
+    position: relative !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
   #lightboxTitleGroup {
-    position: absolute;
-    top: 20px;
-    right: 20px;
+    position: relative !important;
     display: none;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
     gap: 12px;
+    margin-bottom: 25px;
     z-index: 1000;
   }
   #lightboxTitleContainer {
-    width: 300px;
-    height: 300px;
+    width: 260px;
+    height: 260px;
     border: 2px solid #ffffff;
     border-radius: 8px;
     overflow: hidden;
@@ -41,7 +52,7 @@ lightboxStyleTag.innerHTML = `
   }
   #titleControls {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     gap: 4px;
     background: rgba(0,0,0,0.8);
     padding: 6px;
@@ -50,20 +61,16 @@ lightboxStyleTag.innerHTML = `
     z-index: 1002;
   }
   #lightboxImg {
+    position: relative !important;
     display: block;
     max-width: 90vw;
-    max-height: 75vh;
+    max-height: 70vh;
     width: auto;
     height: auto;
     object-fit: contain;
-    transition: max-width 0.2s ease, margin 0.2s ease;
-  }
-  /* When title box is active, prevent large main images from extending into the top-right title zone */
-  #lightbox.has-title #lightboxImg.is-large {
-    max-width: calc(100vw - 360px) !important;
-    max-height: 70vh !important;
   }
   #lightboxCaption {
+    position: relative !important;
     display: block;
     margin-top: 15px;
     text-align: center;
@@ -71,20 +78,9 @@ lightboxStyleTag.innerHTML = `
     color: #fff;
   }
   @media (max-width: 768px), (orientation: portrait) {
-    #lightboxTitleGroup {
-      top: 20px !important;
-      right: 20px !important;
-      left: auto !important;
-      transform: none !important;
-      align-items: flex-start !important;
-    }
     #lightboxTitleContainer {
-      width: 245px !important;
-      height: 245px !important;
-    }
-    #lightbox.has-title #lightboxImg.is-large {
-      max-width: 85vw !important;
-      max-height: 60vh !important;
+      width: 200px !important;
+      height: 200px !important;
     }
   }
 `;
@@ -109,26 +105,39 @@ const lightboxClose = document.getElementById('lightboxClose');
 const lightboxPrev = document.getElementById('lightboxPrev');
 const lightboxNext = document.getElementById('lightboxNext');
 
-// Reposition Close Button to Top-Left
+// Ensure Lightbox has an inner relative wrapper for clean stacking
+let lightboxInner = document.getElementById('lightboxInner');
+if (!lightboxInner && lightbox) {
+  lightboxInner = document.createElement('div');
+  lightboxInner.id = 'lightboxInner';
+  
+  // Move existing children into the inner wrapper
+  while (lightbox.firstChild) {
+    lightboxInner.appendChild(lightbox.firstChild);
+  }
+  lightbox.appendChild(lightboxInner);
+}
+
+// Reposition Close Button to Top-Left of screen (Fixed)
 if (lightboxClose) {
-  lightboxClose.style.position = 'absolute';
+  lightboxClose.style.position = 'fixed';
   lightboxClose.style.top = '20px';
   lightboxClose.style.left = '20px';
   lightboxClose.style.right = 'auto';
-  lightboxClose.style.zIndex = '1001';
+  lightboxClose.style.zIndex = '10001';
 }
 
-// Create Lightbox Title Group (Controls + Title Container)
+// Create Lightbox Title Group (Controls + Title Container) inside lightboxInner
 let lightboxTitleGroup = document.getElementById('lightboxTitleGroup');
 let lightboxTitleContainer = document.getElementById('lightboxTitleContainer');
 let lightboxTitleImg = document.getElementById('lightboxTitleImg');
 let titleControls = document.getElementById('titleControls');
 
-if (!lightboxTitleGroup && lightbox) {
+if (!lightboxTitleGroup && lightboxInner) {
   lightboxTitleGroup = document.createElement('div');
   lightboxTitleGroup.id = 'lightboxTitleGroup';
 
-  // Zoom Controls Toolbar (Placed on the left side of the title container)
+  // Zoom Controls Toolbar
   titleControls = document.createElement('div');
   titleControls.id = 'titleControls';
   
@@ -149,10 +158,11 @@ if (!lightboxTitleGroup && lightbox) {
   
   lightboxTitleContainer.appendChild(lightboxTitleImg);
 
-  // Append controls first so they sit cleanly on the left side
   lightboxTitleGroup.appendChild(titleControls);
   lightboxTitleGroup.appendChild(lightboxTitleContainer);
-  lightbox.appendChild(lightboxTitleGroup);
+  
+  // Insert title group at the very top of lightboxInner so main image flows below it
+  lightboxInner.insertBefore(lightboxTitleGroup, lightboxInner.firstChild);
 }
 
 function createZoomButton(text, onClick) {
@@ -193,7 +203,7 @@ function resetTitleTransform() {
 }
 
 function adjustZoom(amount) {
-  titleZoom = Math.min(Math.max(titleZoom + amount, 1), 5); // Range: 1x to 5x
+  titleZoom = Math.min(Math.max(titleZoom + amount, 1), 5);
   if (titleZoom === 1) {
     titlePanX = 0;
     titlePanY = 0;
@@ -211,7 +221,6 @@ if (lightboxTitleContainer) {
     adjustZoom(e.deltaY < 0 ? 0.05 : -0.05);
   }, { passive: false });
 
-  // Pan via Pointer Events (Supports Mouse & Touch Drag)
   lightboxTitleContainer.addEventListener('pointerdown', (e) => {
     if (titleZoom > 1) {
       isDraggingTitle = true;
@@ -249,7 +258,7 @@ togglePassBtn.addEventListener('click', () => {
   }
 });
 
-// --- CRYPTOGRAPHIC HASH HELPER (Approach 1 Hint Generator) ---
+// --- CRYPTOGRAPHIC HASH HELPER ---
 async function generatePassHint(passphrase) {
   const enc = new TextEncoder();
   const hashBuffer = await crypto.subtle.digest('SHA-256', enc.encode(passphrase));
@@ -400,14 +409,13 @@ async function saveCaption(id, newCaption) {
   }
 }
 
-// --- SET TITLE HANDLER (Session-Only) ---
+// --- SET TITLE HANDLER ---
 function setAsTitle(targetItemData, recordId) {
   galleryItemsData.forEach(item => item.isTitle = false);
   targetItemData.isTitle = true;
   currentTitleItem = targetItemData;
   resetTitleTransform();
 
-  // Update button visual states across all grid items
   document.querySelectorAll('.grid-item').forEach(el => {
     const titleBtn = el.querySelector('.title-btn');
     if (titleBtn) {
@@ -443,7 +451,6 @@ async function deleteItem(id, storagePath, element) {
     if (currentTitleItem && currentTitleItem.id === id) {
       currentTitleItem = null;
       if (lightboxTitleGroup) lightboxTitleGroup.style.display = 'none';
-      lightbox.classList.remove('has-title');
       resetTitleTransform();
     }
 
@@ -484,27 +491,12 @@ function updateLightboxContent() {
   lightboxImg.src = item.dataUrl;
   lightboxCaption.textContent = item.caption ? `#${item.sequence}\n${item.caption}` : `#${item.sequence}`;
 
-  // Check if image is large/tall
-  lightboxImg.onload = () => {
-    const availableHeight = window.innerHeight - 200;
-    if (lightboxImg.naturalHeight > availableHeight || lightboxImg.height > availableHeight) {
-      lightboxImg.classList.add('is-large');
-    } else {
-      lightboxImg.classList.remove('is-large');
-    }
-  };
-  if (lightboxImg.complete) {
-    lightboxImg.onload();
-  }
-
-  // Title picture display & group visibility
+  // Title picture display & relative group visibility
   if (currentTitleItem && currentTitleItem.dataUrl) {
     lightboxTitleImg.src = currentTitleItem.dataUrl;
     lightboxTitleGroup.style.display = 'flex';
-    lightbox.classList.add('has-title');
   } else {
     lightboxTitleGroup.style.display = 'none';
-    lightbox.classList.remove('has-title');
   }
 }
 
@@ -536,7 +528,6 @@ document.getElementById('fetchBtn').addEventListener('click', async () => {
   galleryItemsData = [];
   currentTitleItem = null;
   if (lightboxTitleGroup) lightboxTitleGroup.style.display = 'none';
-  lightbox.classList.remove('has-title');
   resetTitleTransform();
   status.style.color = "#38bdf8";
   status.innerText = "Fetching entries...";
@@ -612,14 +603,12 @@ document.getElementById('fetchBtn').addEventListener('click', async () => {
         <button class="delete-btn">Delete File</button>
       `;
 
-      // Update local and remote caption on input
       const captionInput = item.querySelector('.caption-input');
       captionInput.addEventListener('input', (e) => {
         itemDataRef.caption = e.target.value;
         saveCaption(record.id, e.target.value);
       });
 
-      // Title Button Handler
       const titleBtn = item.querySelector('.title-btn');
       titleBtn.addEventListener('click', (e) => {
         e.stopPropagation();
