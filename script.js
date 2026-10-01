@@ -30,6 +30,13 @@ lightboxStyleTag.innerHTML = `
     box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     z-index: 1002;
   }
+  #lightboxImg {
+    max-width: 90vw;
+    max-height: 85vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+  }
   @media (max-width: 768px), (orientation: portrait) {
     #lightboxTitleGroup {
       top: 20px !important;
@@ -39,12 +46,15 @@ lightboxStyleTag.innerHTML = `
       align-items: center !important;
     }
     #lightboxTitleContainer {
-      width: 240px !important;
-      height: 240px !important;
+      width: 245px !important;
+      height: 245px !important;
     }
     #lightboxImg {
-      margin-top: 170px !important;
-      max-height: calc(100vh - 220px) !important;
+      margin-top: 275px !important;
+      max-height: calc(100vh - 310px) !important;
+      width: auto !important;
+      height: auto !important;
+      max-width: 95vw !important;
     }
   }
 `;
