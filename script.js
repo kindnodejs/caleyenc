@@ -37,7 +37,7 @@ lightboxStyleTag.innerHTML = `
     align-items: center;
     justify-content: center;
     gap: 12px;
-    margin-bottom: 25px;
+    margin-bottom: 0px;
     z-index: 1000;
   }
   #lightboxTitleContainer {
