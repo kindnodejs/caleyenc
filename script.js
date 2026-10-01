@@ -1,6 +1,14 @@
 // --- INJECT RESPONSIVE STYLES FOR LIGHTBOX & TITLE GROUP ---
 const lightboxStyleTag = document.createElement('style');
 lightboxStyleTag.innerHTML = `
+  #lightbox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 20px;
+  }
   #lightboxTitleGroup {
     position: absolute;
     top: 20px;
@@ -32,13 +40,19 @@ lightboxStyleTag.innerHTML = `
   }
   #lightboxImg {
     max-width: 90vw;
-    max-height: 85vh;
+    max-height: 80vh;
     width: auto;
     height: auto;
     object-fit: contain;
+    transition: margin-top 0.2s ease;
+  }
+  #lightboxImg.is-large {
+    margin-top: 320px; /* Pushes large images down to avoid overlapping the top-right title box */
   }
   #lightboxCaption {
     z-index: 1000;
+    margin-top: 10px;
+    text-align: center;
   }
   @media (max-width: 768px), (orientation: portrait) {
     #lightboxTitleGroup {
@@ -52,13 +66,8 @@ lightboxStyleTag.innerHTML = `
       width: 245px !important;
       height: 245px !important;
     }
-    #lightboxImg {
-      margin: auto !important;
-      max-width: 90vw !important;
-      max-height: 70vh !important;
-      width: auto !important;
-      height: auto !important;
-      object-fit: contain !important;
+    #lightboxImg.is-large {
+      margin-top: 275px !important;
     }
   }
 `;
@@ -456,6 +465,20 @@ function updateLightboxContent() {
   const item = galleryItemsData[currentIndex];
   lightboxImg.src = item.dataUrl;
   lightboxCaption.textContent = item.caption ? `#${item.sequence}\n${item.caption}` : `#${item.sequence}`;
+
+  // Check if image is large/tall and toggle class to avoid overlapping top-right title box
+  lightboxImg.onload = () => {
+    const availableHeight = window.innerHeight - 340;
+    if (lightboxImg.naturalHeight > availableHeight || lightboxImg.height > availableHeight) {
+      lightboxImg.classList.add('is-large');
+    } else {
+      lightboxImg.classList.remove('is-large');
+    }
+  };
+  // Fallback trigger if already cached
+  if (lightboxImg.complete) {
+    lightboxImg.onload();
+  }
 
   // Title picture display & group visibility
   if (currentTitleItem && currentTitleItem.dataUrl) {
