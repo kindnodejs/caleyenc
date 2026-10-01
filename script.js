@@ -112,9 +112,13 @@ if (!lightboxInner && lightbox) {
   lightboxInner.id = 'lightboxInner';
   
   // Move existing children into the inner wrapper
-  while (lightbox.firstChild) {
-    lightboxInner.appendChild(lightbox.firstChild);
-  }
+  Array.from(lightbox.children).forEach(child => {
+    if (child.id !== 'lightboxPrev' && child.id !== 'lightboxNext' && child.id !== 'lightboxClose') {
+      lightboxInner.appendChild(child);
+    }
+  });
+  
+  // Crucial: Add the inner container back into the lightbox
   lightbox.appendChild(lightboxInner);
 }
 
