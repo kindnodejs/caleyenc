@@ -2,12 +2,12 @@
 const lightboxStyleTag = document.createElement('style');
 lightboxStyleTag.innerHTML = `
   #lightbox {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    display: block;
+    position: relative;
     box-sizing: border-box;
-    padding: 20px;
+    padding: 40px 20px;
+    overflow-y: auto;
+    text-align: center;
   }
   #lightboxTitleGroup {
     position: absolute;
@@ -39,20 +39,23 @@ lightboxStyleTag.innerHTML = `
     z-index: 1002;
   }
   #lightboxImg {
+    display: inline-block;
+    margin-top: 20px; /* Small images stay higher up */
     max-width: 90vw;
-    max-height: 80vh;
+    max-height: 75vh;
     width: auto;
     height: auto;
     object-fit: contain;
     transition: margin-top 0.2s ease;
   }
   #lightboxImg.is-large {
-    margin-top: 320px; /* Pushes large images down to avoid overlapping the top-right title box */
+    margin-top: 280px !important; /* Pushes large images down into the bottom space, avoiding overlap */
   }
   #lightboxCaption {
-    z-index: 1000;
-    margin-top: 10px;
+    display: block;
+    margin-top: 15px;
     text-align: center;
+    z-index: 1000;
   }
   @media (max-width: 768px), (orientation: portrait) {
     #lightboxTitleGroup {
