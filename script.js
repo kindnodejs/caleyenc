@@ -37,6 +37,9 @@ lightboxStyleTag.innerHTML = `
     height: auto;
     object-fit: contain;
   }
+  #lightboxCaption {
+    z-index: 1000;
+  }
   @media (max-width: 768px), (orientation: portrait) {
     #lightboxTitleGroup {
       top: 20px !important;
@@ -50,13 +53,9 @@ lightboxStyleTag.innerHTML = `
       height: 245px !important;
     }
     #lightboxImg {
-      position: absolute !important;
-      top: 265px !important;
-      right: 20px !important;
-      left: auto !important;
-      margin: 0 !important;
-      max-height: calc(100vh - 295px) !important;
-      max-width: calc(100vw - 40px) !important;
+      margin: auto !important;
+      max-width: 90vw !important;
+      max-height: 70vh !important;
       width: auto !important;
       height: auto !important;
       object-fit: contain !important;
