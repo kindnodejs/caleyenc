@@ -13,7 +13,7 @@ lightboxStyleTag.innerHTML = `
     flex-direction: column;
     align-items: center;
     box-sizing: border-box;
-    padding: 60px 20px 40px 20px;
+    padding: 0px 20px 40px 20px;
     overflow-y: auto;
   }
   #lightbox.active {
@@ -41,8 +41,8 @@ lightboxStyleTag.innerHTML = `
     z-index: 1000;
   }
   #lightboxTitleContainer {
-    width: 260px;
-    height: 260px;
+    width: 300px;
+    height: 300px;
     border: 2px solid #ffffff;
     border-radius: 8px;
     overflow: hidden;
