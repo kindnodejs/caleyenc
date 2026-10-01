@@ -30,21 +30,36 @@ lightboxStyleTag.innerHTML = `
     box-shadow: 0 4px 12px rgba(0,0,0,0.5);
     z-index: 1002;
   }
+  #lightboxImg {
+    max-width: 90vw;
+    max-height: 85vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+  }
   @media (max-width: 768px), (orientation: portrait) {
     #lightboxTitleGroup {
       top: 20px !important;
-      left: 50% !important;
-      right: auto !important;
-      transform: translateX(-50%) !important;
-      align-items: center !important;
+      right: 20px !important;
+      left: auto !important;
+      transform: none !important;
+      align-items: flex-start !important;
     }
     #lightboxTitleContainer {
       width: 245px !important;
       height: 245px !important;
     }
     #lightboxImg {
-      margin-top: 275px !important;
-      max-height: calc(100vh - 310px) !important;
+      position: absolute !important;
+      top: 265px !important;
+      right: 20px !important;
+      left: auto !important;
+      margin: 0 !important;
+      max-height: calc(100vh - 295px) !important;
+      max-width: calc(100vw - 40px) !important;
+      width: auto !important;
+      height: auto !important;
+      object-fit: contain !important;
     }
   }
 `;
