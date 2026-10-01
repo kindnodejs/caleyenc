@@ -39,8 +39,8 @@ lightboxStyleTag.innerHTML = `
       align-items: center !important;
     }
     #lightboxTitleContainer {
-      width: 230px !important;
-      height: 230px !important;
+      width: 235px !important;
+      height: 235px !important;
     }
     #lightboxImg {
       margin-top: 170px !important;
